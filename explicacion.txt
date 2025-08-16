@@ -1,0 +1,54 @@
+### 1. **El Ojo Compuesto (Compound Eye)**
+
+* **Inspiración Biológica**:
+  Los insectos, como las abejas, tienen **ojos compuestos** formados por múltiples omatidios, que son unidades sensoriales distribuidas en una geometría especial (hexagonal). Estos ojos les permiten captar información visual de diferentes partes de su campo visual de manera simultánea.
+
+* **En el código**:
+
+  * El objeto `CompoundEye` crea un sistema visual compuesto de múltiples **omátidios** (receptores visuales), cada uno con varios **receptores de movimiento** (simulando los fotorreceptores en los ojos de los insectos).
+  * Cada omatidio está diseñado para detectar movimiento a través de la **correlación temporal y espacial**, similar al procesamiento que realizan los omatidios en los ojos de los insectos para detectar cambios en la luz.
+
+* **Analogía con la naturaleza**:
+  El proceso de detección de movimiento y la integración de las señales visuales (a través de la respuesta de cada omatidio) son similares a cómo los insectos usan su visión para detectar movimiento y orientación, ayudando a su navegación.
+
+### 2. **Detección de Movimiento (Motion Detection)**
+
+* **Inspiración Biológica**:
+  Los insectos, como las libélulas, tienen una capacidad impresionante para detectar movimiento debido a la **alta densidad de omatidios** en sus ojos, lo que les permite percibir el movimiento con gran precisión.
+
+* **En el código**:
+
+  * Cada **receptor de movimiento** simula un **fotorreceptor** (como los presentes en los omatidios de los insectos) y evalúa la diferencia en la intensidad luminosa entre fotogramas consecutivos.
+  * El cálculo del movimiento está basado en un modelo **Reichardt**, que se usa en neurociencia para describir cómo los insectos perciben el movimiento a través de la correlación temporal entre señales visuales. En este modelo, la diferencia de intensidad entre el fotograma actual y el anterior se utiliza para calcular el "señal de movimiento".
+
+* **Analogía con la naturaleza**:
+  Al igual que en los insectos, donde la señal de movimiento es una combinación de la diferencia de intensidad entre los fotogramas y el tiempo, este enfoque busca detectar cómo cambian las escenas en un video para encontrar frames más importantes (por ejemplo, con mayor movimiento).
+
+### 3. **Comportamiento de las Abejas (Scout, Worker y Dancer Bees)**
+
+* **Inspiración Biológica**:
+  Las abejas son conocidas por su **inteligencia colectiva** y su capacidad para **comunicarse entre sí** a través de la **danza de waggle**. Esta danza se usa para comunicar la ubicación de las fuentes de alimento dentro de su entorno. Además, las abejas tienen una **memoria espacial** para recordar áreas exploradas y regresar a ellas.
+
+* **En el código**:
+
+  * **ScoutBee (Abejas Exploradoras)**: Estas abejas exploran el espacio de frames y seleccionan los más prometedores (en términos de calidad para SFM) basándose en su **memoria espacial**. Esto es similar a cómo las abejas recuerdan fuentes de alimento de sus exploraciones.
+  * **WorkerBee (Abejas Trabajadoras)**: Evaluan las fuentes de alimento que las scouts encuentran. Realizan un análisis más detallado de las fuentes, lo que refleja cómo las abejas trabajadoras contribuyen al proceso de selección y manejo del néctar.
+  * **WaggleDancer (Abejas Bailarinas)**: Realizan la **danza de waggle**, donde comunican a otras abejas la ubicación de fuentes de alimento con base en la **intensidad de la fuente**. Esto es un reflejo de cómo las abejas, a través de la danza, indican la calidad de la fuente de néctar y la distancia desde la colmena.
+
+* **Analogía con la naturaleza**:
+  En la naturaleza, las abejas trabajan colectivamente para recolectar néctar de flores, lo cual se coordina mediante la danza de waggle, donde la intensidad de la danza indica la calidad de la fuente de alimento (similar a cómo el sistema selecciona los frames más valiosos). Este enfoque inspirado en el comportamiento de las abejas busca crear un **sistema distribuido de exploración y evaluación**, que imita cómo los insectos coordinan sus tareas de manera eficiente.
+
+### 4. **Exploración y Selección de Frames (Swarm Intelligence)**
+
+* **Inspiración Biológica**:
+  El concepto de **inteligencia de enjambre** en biología se refiere al comportamiento colectivo de animales como **abejas**, **hormigas** o **murciélagos**, donde cada miembro del grupo toma decisiones simples basadas en información local y en la interacción con otros miembros del grupo, sin necesidad de un líder central.
+
+* **En el código**:
+
+  * **Selección distribuida**: Las abejas exploran de manera distribuida el espacio de frames, y solo los frames que son prometedores se seleccionan para el siguiente paso. Esto simula el proceso de **exploración distribuida** y **evaluación cooperativa**.
+  * **Evaluación de calidad**: A través de diferentes métricas (como la **densidad de características** o la **información de movimiento**), el sistema permite la **colaboración entre agentes** para identificar los frames de mayor calidad para SFM, similar a cómo un enjambre de abejas selecciona las fuentes de néctar más productivas.
+
+* **Analogía con la naturaleza**:
+  En la naturaleza, los animales de enjambre toman decisiones colaborativas para alcanzar un objetivo común (por ejemplo, encontrar comida). Aquí, el sistema de selección de frames funciona de manera similar, con cada "agente" (abeja) contribuyendo con su información para alcanzar el **objetivo colectivo** de seleccionar los frames más útiles.
+
+---
