@@ -19,6 +19,11 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class BeeBehaviorState(Enum):
+    """
+    BeeBehaviorState defines the behavioral states of a bee in the swarm.
+    Contents:
+        EXPLORING, EVALUATING, DANCING, FOLLOWING, INACTIVE
+    """
     EXPLORING = "exploring"
     EVALUATING = "evaluating" 
     DANCING = "dancing"
@@ -27,7 +32,11 @@ class BeeBehaviorState(Enum):
 
 @dataclass
 class SpatialLocation:
-    """Representa una ubicación en el espacio de frames para exploración"""
+    """
+    Represents a location in the frame space for exploration.
+    Contents:
+        frame_index, region_x, region_y, quality_estimate, explored, exploitation_count
+    """
     frame_index: int
     region_x: int  # Región espacial dentro del frame
     region_y: int
@@ -37,7 +46,11 @@ class SpatialLocation:
 
 @dataclass
 class FoodSource:
-    """Fuente de alimento = Frame con alta calidad para SFM"""
+    """
+    FoodSource represents a frame with high quality for SFM.
+    Contents:
+        location, nectar_amount, distance, persistence, scouts_visited
+    """
     location: SpatialLocation
     nectar_amount: float  # Calidad SFM del frame
     distance: float       # Costo computacional
@@ -45,11 +58,19 @@ class FoodSource:
     scouts_visited: Set[int] = field(default_factory=set)
     
     def get_profitability(self) -> float:
-        """Rentabilidad = calidad / costo (bio-realistic)"""
+        """
+        Input: None
+        Context: Calculates the profitability of the food source as quality/cost (bio-realistic).
+        Output: Profitability score (float)
+        """
         return self.nectar_amount / max(self.distance, 0.1)
 
 class MotionReceptor:
-    """Simula un fotorreceptor individual en un omatidio"""
+    """
+    Simulates an individual photoreceptor in an ommatidium.
+    Contents:
+        position, sensitivity, previous_intensity, temporal_buffer
+    """
     
     def __init__(self, position: Tuple[int, int], sensitivity: float = 1.0):
         self.position = position
@@ -58,7 +79,11 @@ class MotionReceptor:
         self.temporal_buffer = []  # Historial temporal como en insectos reales
         
     def detect_motion(self, current_intensity: float, dt: float) -> float:
-        """Detecta movimiento como un fotorreceptor real"""
+        """
+        Input: current_intensity (float), dt (float)
+        Context: Detects motion as a real photoreceptor using temporal difference.
+        Output: Absolute motion signal (float)
+        """
         # Diferencia temporal (como Elementary Motion Detectors - EMD)
         motion_signal = 0.0
         
@@ -79,7 +104,11 @@ class MotionReceptor:
         return abs(motion_signal)
 
 class CompoundEye:
-    """OJO COMPUESTO REAL con múltiples omatidios"""
+    """
+    Real compound eye with multiple ommatidia.
+    Contents:
+        n_ommatidia, fov_degrees, ommatidia, motion_field
+    """
     
     def __init__(self, n_ommatidia: int = 100, fov_degrees: float = 180):
         self.n_ommatidia = n_ommatidia
@@ -91,7 +120,11 @@ class CompoundEye:
         self._initialize_ommatidia()
         
     def _initialize_ommatidia(self):
-        """Inicializar omatidios con distribución realista"""
+        """
+        Input: None
+        Context: Initializes ommatidia with a realistic hexagonal distribution.
+        Output: None
+        """
         # Distribución hexagonal como en ojos reales
         for i in range(self.n_ommatidia):
             # Posición angular (similar a Drosophila)
@@ -110,7 +143,11 @@ class CompoundEye:
     
     def process_frame_motion(self, frame: np.ndarray, prev_frame: np.ndarray, 
                            dt: float = 0.033) -> Dict[str, float]:
-        """Procesa movimiento con modelo bio-realista"""
+        """
+        Input: frame (np.ndarray), prev_frame (np.ndarray), dt (float)
+        Context: Processes motion using a bio-realistic model.
+        Output: Dictionary with global_motion, local_variations, directional_bias, motion_saliency
+        """
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
         
@@ -146,7 +183,11 @@ class CompoundEye:
         }
     
     def _compute_directional_bias(self, responses: List[float]) -> float:
-        """Calcula sesgo direccional del movimiento"""
+        """
+        Input: responses (List[float])
+        Context: Calculates directional bias of motion.
+        Output: Directional bias magnitude (float)
+        """
         if len(responses) < 2:
             return 0.0
             
@@ -160,7 +201,11 @@ class CompoundEye:
         return magnitude / max(np.sum(responses), 0.001)
 
 class ScoutBee:
-    """Abeja exploradora que busca nuevas fuentes de alimento (frames buenos)"""
+    """
+    Explorer bee that searches for new food sources (good frames).
+    Contents:
+        bee_id, state, compound_eye, current_location, memory_locations, exploration_radius, energy
+    """
     
     def __init__(self, bee_id: int, compound_eye: CompoundEye):
         self.bee_id = bee_id
@@ -173,7 +218,11 @@ class ScoutBee:
         
     def explore_territory(self, frames: List[np.ndarray], 
                      explored_locations: Set[int]) -> Optional[FoodSource]:
-        """Explora territorio con criterios más permisivos"""
+        """
+        Input: frames (List[np.ndarray]), explored_locations (Set[int])
+        Context: Explores territory with more permissive criteria to find new food sources.
+        Output: FoodSource object or None
+        """
         
         if self.energy <= 0:
             return None
@@ -227,7 +276,11 @@ class ScoutBee:
     
     def _emergency_exploration(self, frames: List[np.ndarray], 
                           start_idx: int, end_idx: int) -> List[int]:
-        """Exploración de emergencia para llenar saltos grandes"""
+        """
+        Input: frames (List[np.ndarray]), start_idx (int), end_idx (int)
+        Context: Emergency exploration to fill large gaps between selected frames.
+        Output: List of frame indices (List[int])
+        """
         emergency_frames = []
         gap_size = end_idx - start_idx
         
@@ -258,14 +311,22 @@ class ScoutBee:
     
     def _find_nearby_unexplored(self, center_idx: int, 
                               unexplored_indices: List[int]) -> int:
-        """Encuentra frame no explorado cerca del centro"""
+        """
+        Input: center_idx (int), unexplored_indices (List[int])
+        Context: Finds an unexplored frame near the center index.
+        Output: Index of nearby unexplored frame (int)
+        """
         nearby = [idx for idx in unexplored_indices 
                  if abs(idx - center_idx) <= self.exploration_radius]
         return random.choice(nearby) if nearby else random.choice(unexplored_indices)
     
     def _evaluate_frame_for_sfm(self, frame: np.ndarray, 
                            prev_frame: np.ndarray) -> float:
-        """Evalúa calidad de frame para SFM con criterios más permisivos"""
+        """
+        Input: frame (np.ndarray), prev_frame (np.ndarray)
+        Context: Evaluates frame quality for SFM with more permissive criteria.
+        Output: SFM quality score (float)
+        """
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
         # 1. Sharpness (umbral más bajo)
@@ -305,7 +366,11 @@ class ScoutBee:
         return min(sfm_quality, 1.0)
     
     def _calculate_processing_cost(self, frame: np.ndarray) -> float:
-        """Calcula costo computacional (distancia en términos de abejas)"""
+        """
+        Input: frame (np.ndarray)
+        Context: Calculates computational cost (distance in bee terms).
+        Output: Cost value (float)
+        """
         # Costo basado en resolución y complejidad
         pixel_count = frame.shape[0] * frame.shape[1]
         complexity = cv2.Laplacian(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), 
@@ -314,7 +379,11 @@ class ScoutBee:
         return (pixel_count / 1000000) + (complexity / 10000)
 
 class WorkerBee:
-    """Abeja trabajadora que evalúa fuentes conocidas"""
+    """
+    Worker bee that evaluates known food sources.
+    Contents:
+        bee_id, state, compound_eye, current_source, dance_intensity
+    """
     
     def __init__(self, bee_id: int, compound_eye: CompoundEye):
         self.bee_id = bee_id
@@ -325,7 +394,11 @@ class WorkerBee:
         
     def evaluate_food_source(self, source: FoodSource, 
                            frames: List[np.ndarray]) -> float:
-        """Evalúa fuente de alimento (frame) en detalle"""
+        """
+        Input: source (FoodSource), frames (List[np.ndarray])
+        Context: Evaluates a food source (frame) in detail.
+        Output: Integrated quality score (float)
+        """
         
         frame_idx = source.location.frame_index
         if frame_idx >= len(frames):
@@ -360,7 +433,11 @@ class WorkerBee:
     
     def _analyze_correspondence_potential(self, frame: np.ndarray, 
                                         prev_frame: np.ndarray) -> float:
-        """Analiza potencial para encontrar correspondencias entre frames"""
+        """
+        Input: frame (np.ndarray), prev_frame (np.ndarray)
+        Context: Analyzes potential for finding correspondences between frames.
+        Output: Correspondence quality score (float)
+        """
         
         orb = cv2.ORB_create(nfeatures=1000)
         
@@ -395,7 +472,11 @@ class WorkerBee:
     
     def _analyze_baseline_potential(self, frame_idx: int, 
                                   frames: List[np.ndarray]) -> float:
-        """Analiza calidad de baseline para triangulación"""
+        """
+        Input: frame_idx (int), frames (List[np.ndarray])
+        Context: Analyzes baseline quality for triangulation.
+        Output: Baseline quality score (float)
+        """
         
         # Evaluamos separación con frames anteriores y posteriores
         baseline_scores = []
@@ -419,7 +500,11 @@ class WorkerBee:
         return np.mean(baseline_scores) if baseline_scores else 0.0
 
 class WaggleDancer:
-    """Abeja que realiza waggle dance para comunicar ubicaciones de calidad"""
+    """
+    Bee that performs waggle dance to communicate high-quality locations.
+    Contents:
+        bee_id, state, dance_duration, followers
+    """
     
     def __init__(self, bee_id: int):
         self.bee_id = bee_id
@@ -429,7 +514,11 @@ class WaggleDancer:
         
     def perform_waggle_dance(self, food_source: FoodSource, 
                            current_position: int) -> Dict[str, float]:
-        """Realiza waggle dance comunicando información de la fuente"""
+        """
+        Input: food_source (FoodSource), current_position (int)
+        Context: Performs waggle dance, communicating information about the food source.
+        Output: Dictionary with dance information
+        """
         
         # Información comunicada en la danza (como abejas reales)
         distance_to_source = abs(food_source.location.frame_index - current_position)
@@ -457,7 +546,12 @@ class WaggleDancer:
         return dance_info
 
 class HiveMind:
-    """Mente colectiva que coordina el comportamiento del enjambre"""
+    """
+    Collective mind that coordinates swarm behavior.
+    Contents:
+        n_scouts, n_workers, compound_eye, scouts, workers, dancers, known_food_sources,
+        explored_locations, dance_floor, hive_knowledge, message_queue, lock
+    """
     
     def __init__(self, n_scouts: int = 20, n_workers: int = 40):
         self.n_scouts = n_scouts
@@ -484,8 +578,12 @@ class HiveMind:
         self.lock = threading.Lock()
         
     def foraging_cycle(self, frames: List[np.ndarray], 
-                  max_cycles: int = 12) -> List[int]:  # Aumentado de 10 a 12
-        """Ejecuta ciclos de forrajeo con más iteraciones"""
+                  max_cycles: int = 12) -> List[int]:
+        """
+        Input: frames (List[np.ndarray]), max_cycles (int)
+        Context: Executes foraging cycles with more iterations.
+        Output: List of selected frame indices (List[int])
+        """
         
         logger.info(f"Iniciando forrajeo con {len(frames)} frames")
         
@@ -513,7 +611,11 @@ class HiveMind:
         return selected_frames
     
     def _detect_large_gaps(self, selected_indices: List[int]) -> List[Tuple[int, int]]:
-        """Detecta saltos grandes entre frames seleccionados"""
+        """
+        Input: selected_indices (List[int])
+        Context: Detects large gaps between selected frames.
+        Output: List of tuples with gap start and end indices (List[Tuple[int, int]])
+        """
         gaps = []
         for i in range(len(selected_indices) - 1):
             current = selected_indices[i]
@@ -527,7 +629,11 @@ class HiveMind:
 
     # Nueva función que incluye frames para emergency exploration
     def _select_final_frames_with_frames(self, frames: List[np.ndarray]) -> List[int]:
-        """Versión de _select_final_frames que incluye emergency exploration"""
+        """
+        Input: frames (List[np.ndarray])
+        Context: Selects final frames including emergency exploration for large gaps.
+        Output: List of selected frame indices (List[int])
+        """
         
         if not self.known_food_sources:
             return []
@@ -596,7 +702,11 @@ class HiveMind:
         return all_selected
     
     def _scout_exploration_phase(self, frames: List[np.ndarray]):
-        """Fase de exploración distribuida por scouts"""
+        """
+        Input: frames (List[np.ndarray])
+        Context: Distributed exploration phase by scout bees.
+        Output: None
+        """
         
         with ThreadPoolExecutor(max_workers=self.n_scouts) as executor:
             futures = []
@@ -619,7 +729,11 @@ class HiveMind:
                     logger.warning(f"Scout {scout.bee_id} falló: {e}")
     
     def _worker_evaluation_phase(self, frames: List[np.ndarray]):
-        """Fase de evaluación detallada por workers"""
+        """
+        Input: frames (List[np.ndarray])
+        Context: Detailed evaluation phase by worker bees.
+        Output: None
+        """
         
         if not self.known_food_sources:
             return
@@ -647,7 +761,11 @@ class HiveMind:
                     logger.warning(f"Worker {worker.bee_id} falló: {e}")
     
     def _dance_communication_phase(self):
-        """Fase de comunicación por waggle dance"""
+        """
+        Input: None
+        Context: Communication phase via waggle dance.
+        Output: None
+        """
         
         # Seleccionar mejores fuentes para danzar
         if not self.known_food_sources:
@@ -673,7 +791,11 @@ class HiveMind:
             self.dance_floor.append(dance_info)
     
     def _dance_following_phase(self, frames: List[np.ndarray]):
-        """Fase donde abejas siguen información de danzas"""
+        """
+        Input: frames (List[np.ndarray])
+        Context: Phase where bees follow information from dances.
+        Output: None
+        """
         
         if not self.dance_floor:
             return
@@ -727,7 +849,11 @@ class HiveMind:
     
     # Modificar la función _check_convergence para ser menos estricta
     def _check_convergence(self) -> bool:
-        """Verifica convergencia con criterios más relajados"""
+        """
+        Input: None
+        Context: Checks convergence with more relaxed criteria.
+        Output: True if converged, False otherwise (bool)
+        """
         
         if len(self.known_food_sources) < 3:  # Reducido de 5 a 3
             return False
@@ -746,7 +872,11 @@ class HiveMind:
         return False
     
     def _select_final_frames(self) -> List[int]:
-        """Selección final más permisiva con continuidad mejorada"""
+        """
+        Input: None
+        Context: Final selection with improved continuity and more permissive threshold.
+        Output: List of selected frame indices (List[int])
+        """
         
         if not self.known_food_sources:
             return []
@@ -807,7 +937,11 @@ class HiveMind:
     
 def run_bio_inspired_frame_selection(input_dir: str, output_dir: str,
                                      n_scouts: int = 20, n_workers: int = 40) -> Dict:
-    """Función principal para ejecutar selección bio-inspirada"""
+    """
+    Input: input_dir (str), output_dir (str), n_scouts (int), n_workers (int)
+    Context: Main function to execute bio-inspired frame selection.
+    Output: Dictionary with selection summary
+    """
 
     start_time = time.time()
 
