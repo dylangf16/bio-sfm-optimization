@@ -29,12 +29,12 @@ class HiveMind:
         self.workers = [WorkerBee(i + n_scouts, self.compound_eye) 
                        for i in range(n_workers)]
         self.dancers = [WaggleDancer(i + n_scouts + n_workers) 
-                       for i in range(min(n_scouts, 10))]  # Subset de dancers
+                       for i in range(min(n_scouts, 10))]
         
         # Estado global
         self.known_food_sources: List[FoodSource] = []
         self.explored_locations: Set[int] = set()
-        self.dance_floor: List[Dict] = []  # Información de danzas activas
+        self.dance_floor: List[Dict] = []
         self.hive_knowledge: Dict[str, float] = {}
         
         # Comunicación entre abejas
@@ -42,36 +42,27 @@ class HiveMind:
         self.lock = threading.Lock()
         
     def foraging_cycle(self, frames: List[np.ndarray], 
-                  max_cycles: int = 12) -> List[int]:
-        """
-        Input: frames (List[np.ndarray]), max_cycles (int)
-        Context: Executes foraging cycles with more iterations.
-        Output: List of selected frame indices (List[int])
-        """
-        
-        logger.info(f"Iniciando forrajeo con {len(frames)} frames")
-        
-        # Almacenar frames para usar en emergency exploration
-        self.frames = frames
+                      max_cycles: int = 12) -> List[int]:
+
+        logger.info(f"Starting foraging with {len(frames)} frames")
         
         for cycle in range(max_cycles):
-            logger.info(f"Ciclo de forrajeo {cycle + 1}/{max_cycles}")
+            logger.info(f"Foraging cycle {cycle + 1}/{max_cycles}")
             
-            # Fases originales...
+            # Execute foraging phases
             self._scout_exploration_phase(frames)
             self._worker_evaluation_phase(frames)
             self._dance_communication_phase()
             self._dance_following_phase(frames)
             
-            # Evaluación de convergencia más relajada
-            if cycle >= 5 and self._check_convergence():  # Mínimo 5 ciclos
-                logger.info(f"Convergencia alcanzada en ciclo {cycle + 1}")
+            if cycle >= 5 and self._check_convergence():
+                logger.info(f"Convergence reached at cycle {cycle + 1}")
                 break
                 
-        # Selección final con frames disponibles
+        # Final selection with gap management
         selected_frames = self._select_final_frames_with_frames(frames)
         
-        logger.info(f"Forrajeo completado. Seleccionados {len(selected_frames)} frames")
+        logger.info(f"Foraging completed. Selected {len(selected_frames)} frames")
         return selected_frames
     
     def _detect_large_gaps(self, selected_indices: List[int]) -> List[Tuple[int, int]]:

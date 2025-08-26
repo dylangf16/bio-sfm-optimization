@@ -204,7 +204,6 @@ class WorkerBee:
         Context: Evaluates a food source (frame) in detail.
         Output: Integrated quality score (float)
         """
-        
         frame_idx = source.location.frame_index
         if frame_idx >= len(frames):
             return 0.0
@@ -212,25 +211,24 @@ class WorkerBee:
         frame = frames[frame_idx]
         prev_frame = frames[max(0, frame_idx - 1)]
         
-        # Evaluación detallada usando compound eye
+        # Motion analysis using compound eye
         motion_analysis = self.compound_eye.process_frame_motion(frame, prev_frame)
         
-        # Análisis de correspondencias (crítico para SFM)
         correspondence_quality = self._analyze_correspondence_potential(frame, prev_frame)
         
-        # Análisis de baseline (separación entre frames para triangulación)
+        # Baseline quality for triangulation
         baseline_quality = self._analyze_baseline_potential(frame_idx, frames)
         
-        # Score integrado para SFM
         integrated_quality = (
-            source.nectar_amount * 0.4 +           # Calidad base
-            correspondence_quality * 0.35 +        # Potencial de matching
-            baseline_quality * 0.15 +              # Calidad de baseline
-            motion_analysis['motion_saliency'] / 100 * 0.1  # Motion info
+            source.nectar_amount * 0.4 +           # Q_base
+            correspondence_quality * 0.35 +        # Q_corr
+            baseline_quality * 0.15 +              # Q_baseline
+            motion_analysis['motion_saliency'] / 100 * 0.1  # Q_motion
         )
         
-        # Actualizar fuente
+        # Update source
         source.nectar_amount = integrated_quality
+        source.baseline_quality = baseline_quality
         source.scouts_visited.add(self.bee_id)
         source.persistence += 1
         
@@ -243,36 +241,36 @@ class WorkerBee:
         Context: Analyzes potential for finding correspondences between frames.
         Output: Correspondence quality score (float)
         """
-        
+         
         orb = cv2.ORB_create(nfeatures=1000)
         
-        # Detectar y describir features
+        # Detect and describe features
         kp1, des1 = orb.detectAndCompute(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), None)
         kp2, des2 = orb.detectAndCompute(cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY), None)
         
         if des1 is None or des2 is None or len(des1) < 10 or len(des2) < 10:
             return 0.0
             
-        # Matching de features
+        # Feature matching
         bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
         matches = bf.match(des1, des2)
         matches = sorted(matches, key=lambda x: x.distance)
         
-        if len(matches) < 8:  # Mínimo para matriz fundamental
+        if len(matches) < 8:  # Minimum for fundamental matrix
             return 0.0
             
-        # Calidad de matches
+        # Quality of matches
         good_matches = [m for m in matches if m.distance < 50]
         match_ratio = len(good_matches) / len(matches)
         
-        # Distribución espacial de matches
+        # Spatial distribution of matches
         if len(good_matches) > 10:
             points1 = np.array([kp1[m.queryIdx].pt for m in good_matches])
             spatial_distribution = np.var(points1, axis=0).mean()
             spatial_score = min(spatial_distribution / 10000, 1.0)
         else:
             spatial_score = 0.0
-            
+        
         return match_ratio * 0.7 + spatial_score * 0.3
     
     def _analyze_baseline_potential(self, frame_idx: int, 
@@ -282,23 +280,22 @@ class WorkerBee:
         Context: Analyzes baseline quality for triangulation.
         Output: Baseline quality score (float)
         """
-        
-        # Evaluamos separación con frames anteriores y posteriores
+
         baseline_scores = []
         
         for offset in [-2, -1, 1, 2]:
             other_idx = frame_idx + offset
             if 0 <= other_idx < len(frames):
-                # Separación temporal
+                # Temporal separation
                 temporal_sep = abs(offset)
                 
-                # Diferencia visual (proxy para baseline geométrico)
+                # Visual difference (proxy for geometric baseline)
                 frame1 = cv2.cvtColor(frames[frame_idx], cv2.COLOR_BGR2GRAY)
                 frame2 = cv2.cvtColor(frames[other_idx], cv2.COLOR_BGR2GRAY)
                 
                 visual_diff = np.mean(cv2.absdiff(frame1, frame2))
                 
-                # Score de baseline (balance entre separación y diferencia)
+                # Baseline score (balance between separation and difference)
                 baseline_score = (temporal_sep / 3.0) * 0.6 + (visual_diff / 255.0) * 0.4
                 baseline_scores.append(min(baseline_score, 1.0))
                 
@@ -324,17 +321,14 @@ class WaggleDancer:
         Context: Performs waggle dance, communicating information about the food source.
         Output: Dictionary with dance information
         """
-        
-        # Información comunicada en la danza (como abejas reales)
         distance_to_source = abs(food_source.location.frame_index - current_position)
         
-        # Intensidad de danza proporcional a calidad/distancia
         dance_intensity = food_source.get_profitability()
         
-        # Duración de danza (proporcional a calidad)
-        dance_duration = min(dance_intensity * 10, 30)  # Max 30 segundos
+        # Dance duration proportional to quality
+        dance_duration = min(dance_intensity * 10, 30)  # Max 30 seconds
         
-        # Dirección (en términos de índices de frame)
+        # Direction (frame index terms)
         direction = 1 if food_source.location.frame_index > current_position else -1
         
         dance_info = {

@@ -22,11 +22,14 @@ class SpatialLocation:
         frame_index, region_x, region_y, quality_estimate, explored, exploitation_count
     """
     frame_index: int
-    region_x: int  # Región espacial dentro del frame
+    region_x: int
     region_y: int
     quality_estimate: float = 0.0
     explored: bool = False
     exploitation_count: int = 0
+    feature_density: float = 0.0
+    motion_saliency: float = 0.0
+    correspondence_potential: float = 0.0
 
 @dataclass
 class FoodSource:
@@ -36,10 +39,12 @@ class FoodSource:
         location, nectar_amount, distance, persistence, scouts_visited
     """
     location: SpatialLocation
-    nectar_amount: float  # Calidad SFM del frame
-    distance: float       # Costo computacional
-    persistence: int = 0  # Cuántos ciclos ha sido visitada
+    nectar_amount: float  # SFM quality
+    distance: float       # Computational cost
+    persistence: int = 0
     scouts_visited: Set[int] = field(default_factory=set)
+    baseline_quality: float = 0.0
+    temporal_coherence: float = 0.0
     
     def get_profitability(self) -> float:
         """
